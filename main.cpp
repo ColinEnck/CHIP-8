@@ -17,7 +17,8 @@ int main(int argc, char** argv)
     return 0;
   }
   // setting up the environment
-  uint16_t* mem = (uint16_t*) check_malloc(4096 - 512); // emulated memory minus free space at beginning
+  // uint16_t is two bytes long to store each 2-byte instructin, must half array size accordingly
+  uint16_t* mem = (uint16_t*) check_malloc((4096-512)/2); // emulated memory minus free space at beginning
   int PC; // program counter
   int I; // index register
   char SP; // stack pointer; 1 byte long
