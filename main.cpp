@@ -5,9 +5,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdint.h>
-#include "funcs.h"
 #define LENGTH 64
 #define WIDTH 32
+
+void* check_malloc(unsigned int size);
+void usage();
 
 int main(int argc, char** argv)
 {
@@ -62,4 +64,23 @@ int main(int argc, char** argv)
   }
 
   return 0;
+}
+
+void* check_malloc(unsigned int size)
+{
+  void* ptr = malloc(size);
+  if (ptr == NULL)
+  {
+    perror("malloc failure");
+    exit(1);
+  }
+
+  return ptr;
+}
+
+void usage()
+{
+  printf("Please specify the path of the chip-8 file as a command line argument.\n");
+  printf("USAGE:\n");
+  printf("./chip8 [FILENAME]\n");
 }
