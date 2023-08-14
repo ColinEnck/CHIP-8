@@ -10,6 +10,7 @@
 
 void* check_malloc(unsigned int size);
 void usage();
+char* fetch(int &PC, uint16_t mem[]);
 
 int main(int argc, char** argv)
 {
@@ -19,8 +20,7 @@ int main(int argc, char** argv)
     return 0;
   }
   // setting up the environment
-  // uint16_t is two bytes long to store each 2-byte instructin, must half array size accordingly
-  uint16_t* mem = (uint16_t*) check_malloc((4096-512)/2); // emulated memory minus free space at beginning
+  uint16_t* mem = (uint16_t*) check_malloc(4096-512); // emulated memory minus free space at beginning
   int PC; // program counter
   int I; // index register
   char SP; // stack pointer; 1 byte long
@@ -49,12 +49,17 @@ int main(int argc, char** argv)
     printf("%04X\n", mem[i]);
 
   sf::RenderWindow window(sf::VideoMode(LENGTH * 20, WIDTH * 20), "Screen");
+  bool screen[32][64];
+  for (int i = 0; i < 32; ++i)
+    for (int j = 0; j < 64; ++j)
+      screen[i][j] = false;
 
   while (window.isOpen())
   {
     sf::Event event;
     while (window.pollEvent(event))
     {
+      // key-press logic goes here
       if (event.type == sf::Event::Closed)
         window.close();
     }
@@ -83,4 +88,13 @@ void usage()
   printf("Please specify the path of the chip-8 file as a command line argument.\n");
   printf("USAGE:\n");
   printf("./chip8 [FILENAME]\n");
+}
+
+char* fetch(int &PC, uint16_t mem[])
+{
+  char* instruction = (char*) check_malloc(4);
+  int num = mem[(PC - 512)/2]; // offset for blank memory and uint16_t length
+  sprintf(instruction, "%04X", num);
+  PC += 2;
+  return instruction;
 }
