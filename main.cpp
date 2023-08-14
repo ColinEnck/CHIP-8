@@ -21,6 +21,7 @@ int main(int argc, char** argv)
   }
   // setting up the environment
   uint16_t* mem = (uint16_t*) check_malloc(4096-512); // emulated memory minus free space at beginning
+  uint16_t stack[16]; // 2-byte wide stack
   int PC; // program counter
   int I; // index register
   char SP; // stack pointer; 1 byte long
