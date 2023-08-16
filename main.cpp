@@ -12,7 +12,7 @@
 
 void* check_malloc(unsigned int size);
 void usage();
-char* fetchPC(uint16_t &PC, uint8_t* mem, char* num);
+void fetchPC(uint16_t &PC, uint8_t* mem, char* num); // result is stored in num
 
 int main(int argc, char** argv)
 {
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   // setting up the environment
   uint8_t* mem = (uint8_t*) check_malloc(4096-512); // emulated memory minus free space at beginning
   std::stack<uint16_t> stack; // 16-bit sized stack
-  uint16_t PC; // program counter
+  uint16_t PC = 512; // program counter
   uint16_t I; // index register
   uint8_t SP; // stack pointer; 1 byte long
   uint8_t delay; // delay timer
@@ -65,7 +65,6 @@ int main(int argc, char** argv)
     for (int i = 0; i < 16; ++i)
       keys[i] = false;
 
-    // handle user input here
     sf::Event event;
     while (window.pollEvent(event))
     {
@@ -107,7 +106,77 @@ int main(int argc, char** argv)
       else if (sf::Keyboard::isKeyPressed(sf::Keyboard::F))
         keys[15] = true;
     }
-    
+
+    // logic starts here
+    fetchPC(PC, mem, instruction);
+    int X = instruction[1] - '0';
+    int Y = instruction[2] - '0';
+    int N = instruction[3] - '0';
+    int NN = Y * 16 + N;
+    int NNN = X * 256 + Y * 16 + N;
+    int xpos = registers[X] & 63;
+    int ypos = registers[Y] & 31;
+    uint8_t spriteline;
+
+    switch (instruction[0]) {
+      case '0':
+        if (instruction[2] == 'E' & instruction[3] == '0')
+          for (int i = 0; i < 32; ++i)
+            for (int j = 0; j < 64; ++j)
+              screen[i][j] = false;
+        break;
+      case '1':
+        PC = NNN;
+        break;
+      case '2':
+        break;
+      case '3':
+        break;
+      case '4':
+        break;
+      case '5':
+        break;
+      case '6':
+        registers[X] = NN;
+        break;
+      case '7':
+        registers[X] += NN;
+        break;
+      case '8':
+        break;
+      case '9':
+        break;
+      case 'A':
+        I = NNN;
+        break;
+      case 'B':
+        break;
+      case 'C':
+        break;
+      case 'D':
+        registers[0xF] = 0;
+        for (int y = 0; y < N; ++y)
+        {
+          if (ypos+y >= 32) break;
+          spriteline = mem[I+y-512];
+          for (int x = 0; x < 8; ++x)
+          {
+            if (xpos+x >= 64) break;
+            if ((spriteline >> (7-x)) & 1) // finds the jth bit of the sprite line
+            {
+              if (screen[ypos+y][xpos+x])
+                registers[0xF] = 1;
+              screen[ypos+y][xpos+x] = !(screen[ypos+y][xpos+x]);
+            }
+          }
+        }
+        break;
+      case 'E':
+        break;
+      case 'F':
+        break;
+    }
+
     // draw stuff
     window.clear();
     for (int i = 0; i < 32; ++i)
@@ -143,12 +212,10 @@ void usage()
   printf("./chip8 [FILENAME]\n");
 }
 
-char* fetchPC(uint16_t &PC, uint8_t* mem, char* num)
+void fetchPC(uint16_t &PC, uint8_t* mem, char* num)
 {
   uint8_t firstbyte = mem[PC-512];
   uint8_t secondbyte = mem[PC-512+1];
   PC += 2;
   sprintf(num, "%02X%02X", firstbyte, secondbyte);
-  return num;
 }
-
