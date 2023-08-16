@@ -6,11 +6,13 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stack>
+#include <string.h>
 #define LENGTH 64
 #define WIDTH 32
 
 void* check_malloc(unsigned int size);
 void usage();
+char* fetchPC(uint16_t &PC, uint8_t* mem, char* num);
 
 int main(int argc, char** argv)
 {
@@ -20,15 +22,15 @@ int main(int argc, char** argv)
     return 0;
   }
   // setting up the environment
-  char* mem = (char*) check_malloc(4096-512); // emulated memory minus free space at beginning
+  uint8_t* mem = (uint8_t*) check_malloc(4096-512); // emulated memory minus free space at beginning
   std::stack<uint16_t> stack; // 16-bit sized stack
-  int PC; // program counter
-  int I; // index register
-  int8_t SP; // stack pointer; 1 byte long
-  int delay; // delay timer
-  int sound; // sound timer
+  uint16_t PC; // program counter
+  uint16_t I; // index register
+  uint8_t SP; // stack pointer; 1 byte long
+  uint8_t delay; // delay timer
+  uint8_t sound; // sound timer
   int8_t registers[16]; // one-byte registers;
-  char instruction[4]; // stores the instruction as a string
+  char instruction[5]; // stores the instruction as a string
 
   // reading from file
   FILE *fptr;
@@ -140,3 +142,13 @@ void usage()
   printf("USAGE:\n");
   printf("./chip8 [FILENAME]\n");
 }
+
+char* fetchPC(uint16_t &PC, uint8_t* mem, char* num)
+{
+  uint8_t firstbyte = mem[PC-512];
+  uint8_t secondbyte = mem[PC-512+1];
+  PC += 2;
+  sprintf(num, "%02X%02X", firstbyte, secondbyte);
+  return num;
+}
+
