@@ -64,6 +64,9 @@ fn main() -> io::Result<()> {
             '0' => {
                 if instruction == "00E0" {
                     screen = [[false; 64]; 32];
+                } else if instruction == "00EE" {
+                    if stack.len() == 0 { panic!("Stack is size 0 when attempting to pop"); }
+                    pc = stack.pop().unwrap();
                 }
             },
             '1' => {
