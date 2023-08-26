@@ -1,0 +1,2 @@
+cargo:rustc-link-search=native=/usr/local/opt/openal-soft/lib
+cargo:rustc-link-search=native=/usr/local/lib
