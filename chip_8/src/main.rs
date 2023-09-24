@@ -1,7 +1,8 @@
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
-use pronto_graphics::{Window, Key};
+// use pronto_graphics::{Window, Key};
+use minifb::{Window, WindowOptions, Key};
 use std::time::Instant;
 extern crate ears;
 use ears::{Sound, AudioController};
@@ -47,6 +48,16 @@ fn main() -> io::Result<()> {
         mem[i] = font[i-0x50];
     }
 
+    // colors
+    let black: u32 = from_u8_rgb(0, 0, 0);
+    let white: u32 = from_u8_rgb(255, 255, 255);
+
+    // sets up the grapics window
+    const SCREENWIDTH: usize = 20 * 64;
+    const SCREENHEIGHT: usize = 20 * 32;
+    const WIDTH: usize = 64;
+    const HEIGHT: usize = 32;
+
     // setting up the rest
     let mut stack: Vec<u16> = vec![];
     let mut pc: u16 = 512; 
@@ -55,14 +66,37 @@ fn main() -> io::Result<()> {
     let mut sound: f64 = 0.0;
     let mut registers: [u8; 16] = [0; 16];
     let mut instruction: String;
-    let mut screen: [[bool; 64]; 32] = [[false; 64]; 32];
+    let mut buffer: Vec<u32> = vec![black; SCREENWIDTH * SCREENHEIGHT]; // this is what gets printed to the screen
     let mut keyboard: [bool; 16] = [false; 16];
 
-    // sets up the grapics window
-    let mut window = Window::new(64 * 20, 32 * 20, "CHIP-8!");
+    let mut window = Window::new(
+        "CHIP-8!",
+        SCREENWIDTH,
+        SCREENHEIGHT,
+        WindowOptions::default(),
+    ).expect("Failed to create window");
 
     // audio file
     let mut beep = Sound::new("src/beep.ogg").unwrap();
+
+    let keys = [
+        Key::Key0,
+        Key::Key1,
+        Key::Key2,
+        Key::Key3,
+        Key::Key4,
+        Key::Key5,
+        Key::Key6,
+        Key::Key7,
+        Key::Key8,
+        Key::Key9,
+        Key::A,
+        Key::B,
+        Key::C,
+        Key::D,
+        Key::E,
+        Key::F
+    ];
 
     // event loop
     loop {
@@ -73,29 +107,11 @@ fn main() -> io::Result<()> {
         instruction = fetch(&mem, &mut pc);
 
         // keyboard logic
-        if window.key_pressed(Key::ESCAPE) {
+        if window.is_key_down(Key::Escape) {
             return Ok(());
         }
-        let keys = [
-            Key::NUM0,
-            Key::NUM1,
-            Key::NUM2,
-            Key::NUM3,
-            Key::NUM4,
-            Key::NUM5,
-            Key::NUM6,
-            Key::NUM7,
-            Key::NUM8,
-            Key::NUM9,
-            Key::A,
-            Key::B,
-            Key::C,
-            Key::D,
-            Key::E,
-            Key::F
-        ];
         for i in 0..keys.len() {
-            if window.key_pressed(keys[i]) {
+            if window.is_key_down(keys[i]) {
                 keyboard[i] = true;
             }
         }
@@ -121,7 +137,7 @@ fn main() -> io::Result<()> {
         match first_char {
             '0' => {
                 if instruction == "00E0" {
-                    screen = [[false; 64]; 32];
+                    buffer = vec![black; SCREENWIDTH * SCREENHEIGHT];
                 } else if instruction == "00EE" {
                     if stack.len() == 0 { panic!("Stack is size 0 when attempting to pop"); }
                     pc = stack.pop().unwrap();
@@ -220,8 +236,8 @@ fn main() -> io::Result<()> {
                 registers[hex(&x.to_string())] = random::<u8>() & hex(&nn) as u8;
             },
             'D' => {
-                let xcords = registers[hex(&x.to_string()) % 64];
-                let ycords = registers[hex(&y.to_string()) % 32];
+                let xcords = registers[hex(&x.to_string()) % WIDTH];
+                let ycords = registers[hex(&y.to_string()) % HEIGHT];
                 registers[0xF] = 0;
                 for i in 0..hex(&n.to_string()) {
                     if ycords + (i as u8) >= 32 { break; }
@@ -229,11 +245,11 @@ fn main() -> io::Result<()> {
                     let sprite_str = format!("{:08b}", sprite);
                     for (count, bit) in sprite_str.chars().enumerate() {
                         if xcords + (count as u8) >= 64 { break; }
-                        if screen[ycords as usize + i][xcords as usize + count] {
+                        if buffer[(ycords as usize + i) * WIDTH + (xcords as usize + count)] == white {
                             registers[0xF] = 1;
-                            screen[ycords as usize + i][xcords as usize + count] = false;
+                            draw_to_buffer(&mut buffer, xcords as usize + count, ycords as usize + i, black);
                         } else if bit == '1' {
-                            screen[ycords as usize + i][xcords as usize + count] = true;
+                            draw_to_buffer(&mut buffer, xcords as usize + count, ycords as usize + i, white);
                         }
                     }
                 }
@@ -327,16 +343,7 @@ fn main() -> io::Result<()> {
             }
         }
 
-        // drawing to the screen
-        for i in 0..32 {
-            for j in 0..64 {
-                if screen[i][j] {
-                    window.square(((j*20) as f32, (i*20) as f32), 20 as f32);
-                }
-            }
-        }
-
-        window.update();
+        window.update_with_buffer(&buffer, SCREENWIDTH, SCREENHEIGHT).unwrap();
 
         // to meausre how long the loop took
         let end_time = Instant::now();
@@ -364,4 +371,18 @@ fn fetch(mem: &[u8; 4096], pc: &mut u16) -> String {
 // converts a hex number in string to a num
 fn hex(num: &str) -> usize {
     usize::from_str_radix(num, 16).unwrap()
+}
+
+// copied from minifb docs
+fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
+    let (r, g, b) = (r as u32, g as u32, b as u32);
+    (r << 16) | (g << 8) | b
+}
+
+fn draw_to_buffer(buffer: &mut Vec<u32>, x: usize, y: usize, color: u32) {
+    for i in 0..20 {
+        for j in 0..20 {
+            buffer[((y * 20) + i) * (64 * 20) + (x * 20) + j] = color;
+        }
+    }
 }

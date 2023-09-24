@@ -1,0 +1,11 @@
+/home/colinenck/CS/repos/CHIP-8/chip_8/target/debug/deps/linux_raw_sys-1263446f108b4425.rmeta: /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/lib.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/elf.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/errno.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/general.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/ioctl.rs
+
+/home/colinenck/CS/repos/CHIP-8/chip_8/target/debug/deps/liblinux_raw_sys-1263446f108b4425.rlib: /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/lib.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/elf.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/errno.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/general.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/ioctl.rs
+
+/home/colinenck/CS/repos/CHIP-8/chip_8/target/debug/deps/linux_raw_sys-1263446f108b4425.d: /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/lib.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/elf.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/errno.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/general.rs /home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/ioctl.rs
+
+/home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/lib.rs:
+/home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/elf.rs:
+/home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/errno.rs:
+/home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/general.rs:
+/home/colinenck/.cargo/registry/src/github.com-1ecc6299db9ec823/linux-raw-sys-0.4.7/src/x86_64/ioctl.rs:
