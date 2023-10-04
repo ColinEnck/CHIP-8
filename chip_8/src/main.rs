@@ -1,7 +1,6 @@
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
-// use pronto_graphics::{Window, Key};
 use minifb::{Window, WindowOptions, Key};
 use std::time::Instant;
 extern crate ears;
