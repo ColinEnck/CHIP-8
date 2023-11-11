@@ -1,3 +1,0 @@
-CLR
-RET
-JP 3AC
