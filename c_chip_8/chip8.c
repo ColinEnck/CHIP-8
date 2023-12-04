@@ -1,3 +1,6 @@
+// TODO:
+// implement timer instructions
+// FX55 and FX65
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -112,6 +115,7 @@ int main(int argc, char const *argv[])
     unsigned char *index = NULL;
 
     // stack array; 64 entries for good measure
+    // each entry is the number of a memory location
     Stack stack;
     stack.array = (unsigned short *)malloc(sizeof(short) * 64);
     if (stack.array == NULL)
@@ -167,8 +171,6 @@ int main(int argc, char const *argv[])
     unsigned short whole;
     unsigned char x, y, n, nn;
     unsigned short nnn;
-
-    time_t timer = time(NULL);
 
     if (!init())
         failed("initialize");
@@ -262,9 +264,26 @@ int main(int argc, char const *argv[])
                 if (whole == 0x00E0)
                     for (int i = 0; i < 64 * 32; ++i)
                         screen[i] = 0;
+                else if (whole == 0x00EE)
+                    pc = &memory[pop(&stack)];
                 break;
             case 0x1:
                 pc = &memory[nnn];
+                break;
+            case 0x2:
+                push(&stack, pc - memory);
+                pc = &memory[nnn];
+                break;
+            case 0x3:
+                if (regs[x] == nn)
+                    pc += 2;
+                break;
+            case 0x4:
+                if (regs[x] != nn)
+                    pc += 2;
+            case 0x5:
+                if (regs[x] == regs[y])
+                    pc += 2;
                 break;
             case 0x6:
                 regs[x] = nn;
@@ -272,8 +291,59 @@ int main(int argc, char const *argv[])
             case 0x7:
                 regs[x] += nn;
                 break;
+            case 0x8:
+                switch (instruction.nibbles.fourth){
+                    case 0x0:
+                        regs[x] = regs[y];
+                        break;
+                    case 0x1:
+                        regs[x] |= regs[y];
+                        break;
+                    case 0x2:
+                        regs[x] &= regs[y];
+                        break;
+                    case 0x3:
+                        regs[x] ^= regs[y];
+                        break;
+                    case 0x4:
+                        if ((regs[x] += regs[y]) > 255)
+                            regs[0xF] = 1;
+                        else regs[0xF] = 0;
+                        break;
+                    case 0x5:
+                        if (regs[x] > regs[y])
+                            regs[0xF] = 1;
+                        else regs[0xF] = 0;
+                        regs[x] -= regs[y];
+                        break;
+                    case 0x6:
+                        regs[x] >>= 1;
+                        break;
+                    case 0x7:
+                        if (regs[y] > regs[x])
+                            regs[0xF] = 1;
+                        else regs[0xF] = 0;
+                        regs[x] = regs[y] - regs[x];
+                        break;
+                    case 0xE:
+                        regs[x] <<= 1;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 0x9:
+                if (regs[x] != regs[y])
+                    pc += 2;
+                break;
             case 0xA:
                 index = &memory[nnn];
+                break;
+            case 0xB:
+                pc = &memory[nnn];
+                break;
+            case 0xC:
+                regs[x] = rand() & nn;
                 break;
             case 0xD:
                 unsigned int xcords = regs[x] % 64;
@@ -299,6 +369,56 @@ int main(int argc, char const *argv[])
                         pixelChange(screen, xcords + 6, ycords + i, regs);
                     if (sprite.bits.eigth)
                         pixelChange(screen, xcords + 7, ycords + i, regs);
+                }
+                break;
+            case 0xE:
+                switch (instruction.nibbles.fourth)
+                {
+                case 0xE:
+                    if (keyboard[regs[x]] == 1)
+                        pc += 2;
+                    break;
+                case 0x1:
+                    if (keyboard[regs[x]] != 1)
+                        pc += 2;
+                    break;
+                default:
+                    break;
+                }
+                break;
+            case 0xF:
+                switch (instruction.nibbles.fourth)
+                {
+                case 0xE:
+                    index += regs[x];
+                    // if (index >= 0x1000)
+                    //     regs[0xF] = 1;
+                    break;
+                case 0xA:
+                    int pressed = 0;
+                    for (int i = 0; i < 16; ++i)
+                        if (keyboard[i])
+                        {
+                            pressed = 1;
+                            break;
+                        }
+                    if (pressed == 0)
+                        pc -= 2;
+                    break;
+                case 0x9:
+                    index = &memory[0x50+(regs[x]*5)];
+                    break;
+                case 0x3:
+                    int hundreds, tens, ones;
+                    hundreds = regs[x] / 100;
+                    tens = (regs[x] / 10) % 10;
+                    ones = regs[x] % 10;
+                    *index = hundreds;
+                    *(index+1) = tens;
+                    *(index+2) = ones;
+                    break;
+                default:
+                    break;
                 }
                 break;
             default:

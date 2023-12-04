@@ -4,9 +4,9 @@ typedef struct Stack
     unsigned int size;
 } Stack;
 
-short pop(Stack* stack)
+unsigned short pop(Stack* stack)
 {
-    short ret = stack->array[stack->size-1];
+    unsigned short ret = stack->array[stack->size-1];
     stack->array[stack->size-1] = 0;
     stack->size--;
     return ret;
@@ -14,12 +14,11 @@ short pop(Stack* stack)
 
 void push(Stack* stack, unsigned short val)
 {
-    printf("PUSHING: %d\n", val);
     stack->array[stack->size] = val;
     stack->size++;
 }
 
-short top(Stack stack)
+char top(Stack stack)
 {
     return stack.array[stack.size-1];
 }
