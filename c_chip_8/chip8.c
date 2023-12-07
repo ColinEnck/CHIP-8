@@ -1,6 +1,3 @@
-// TODO:
-// implement timer instructions
-// FX55 and FX65
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -111,8 +108,8 @@ int main(int argc, char const *argv[])
     // program counter
     unsigned char *pc = &memory[0x200];
 
-    // index register
-    unsigned char *index = NULL;
+    // index register, holds the index of a memory location
+    unsigned int index = 0;
 
     // stack array; 64 entries for good measure
     // each entry is the number of a memory location
@@ -172,6 +169,10 @@ int main(int argc, char const *argv[])
     unsigned char x, y, n, nn;
     unsigned short nnn;
 
+    // timer stuff
+    struct timespec start, end;
+    unsigned long long elapsed = 0;
+
     if (!init())
         failed("initialize");
     else
@@ -193,58 +194,60 @@ int main(int argc, char const *argv[])
                     case SDLK_ESCAPE:
                         quit = 1;
                         break;
-                    case SDLK_0:
+                    case SDLK_1:
                         keyboard[0] = 1;
                         break;
-                    case SDLK_1:
+                    case SDLK_2:
                         keyboard[1] = 1;
                         break;
-                    case SDLK_2:
+                    case SDLK_3:
                         keyboard[2] = 1;
                         break;
-                    case SDLK_3:
+                    case SDLK_4:
                         keyboard[3] = 1;
                         break;
-                    case SDLK_4:
+                    case SDLK_q:
                         keyboard[4] = 1;
                         break;
-                    case SDLK_5:
+                    case SDLK_w:
                         keyboard[5] = 1;
                         break;
-                    case SDLK_6:
+                    case SDLK_e:
                         keyboard[6] = 1;
                         break;
-                    case SDLK_7:
+                    case SDLK_r:
                         keyboard[7] = 1;
                         break;
-                    case SDLK_8:
+                    case SDLK_a:
                         keyboard[8] = 1;
                         break;
-                    case SDLK_9:
+                    case SDLK_s:
                         keyboard[9] = 1;
                         break;
-                    case SDLK_a:
+                    case SDLK_d:
                         keyboard[10] = 1;
                         break;
-                    case SDLK_b:
+                    case SDLK_f:
                         keyboard[11] = 1;
                         break;
-                    case SDLK_c:
+                    case SDLK_z:
                         keyboard[12] = 1;
                         break;
-                    case SDLK_d:
+                    case SDLK_x:
                         keyboard[13] = 1;
                         break;
-                    case SDLK_e:
+                    case SDLK_c:
                         keyboard[14] = 1;
                         break;
-                    case SDLK_f:
+                    case SDLK_v:
                         keyboard[15] = 1;
                         break;
                     default:
                         break;
                     }
             }
+
+            clock_gettime(CLOCK_MONOTONIC, &start);
 
             // fetch-decode-execute steps are here
 
@@ -306,27 +309,51 @@ int main(int argc, char const *argv[])
                         regs[x] ^= regs[y];
                         break;
                     case 0x4:
-                        if ((regs[x] += regs[y]) > 255)
+                        int result = (int) regs[x] + (int) regs[y];
+                        if (result > 255) 
+                        {
                             regs[0xF] = 1;
-                        else regs[0xF] = 0;
+                            regs[x] = (unsigned char) result;
+                        }
+                        else 
+                        {
+                            regs[0xF] = 0;
+                            regs[x] = (unsigned char) result & 0xFF;
+                        }
                         break;
                     case 0x5:
-                        if (regs[x] > regs[y])
+                        result = (int) regs[x] - (int) regs[y];
+                        if (result >= 0)
+                        {
                             regs[0xF] = 1;
-                        else regs[0xF] = 0;
-                        regs[x] -= regs[y];
+                            regs[x] = result;
+                        }
+                        else 
+                        {
+                            regs[0xF] = 0;
+                            regs[x] = (unsigned char) result;
+                        }
                         break;
                     case 0x6:
-                        regs[x] >>= 1;
+                        regs[0xF] = regs[x] & 0x01;
+                        regs[x] /= 2;
                         break;
                     case 0x7:
-                        if (regs[y] > regs[x])
+                        result = (int) regs[y] - (int) regs[x];
+                        if (result >= 0)
+                        {
                             regs[0xF] = 1;
-                        else regs[0xF] = 0;
-                        regs[x] = regs[y] - regs[x];
+                            regs[x] = result;
+                        }
+                        else 
+                        {
+                            regs[0xF] = 0;
+                            regs[x] = (unsigned char) result;
+                        }
                         break;
                     case 0xE:
-                        regs[x] <<= 1;
+                        regs[0xF] = regs[x] & 0x01;
+                        regs[x] *= 2;
                         break;
                     default:
                         break;
@@ -337,7 +364,7 @@ int main(int argc, char const *argv[])
                     pc += 2;
                 break;
             case 0xA:
-                index = &memory[nnn];
+                index = nnn;
                 break;
             case 0xB:
                 pc = &memory[nnn];
@@ -352,7 +379,7 @@ int main(int argc, char const *argv[])
                 Sprite sprite;
                 for (int i = 0; i < n; ++i)
                 {
-                    sprite.value = *(index + i);
+                    sprite.value = memory[index+i];
                     if (sprite.bits.first)
                         pixelChange(screen, xcords, ycords + i, regs);
                     if (sprite.bits.second)
@@ -389,10 +416,41 @@ int main(int argc, char const *argv[])
             case 0xF:
                 switch (instruction.nibbles.fourth)
                 {
-                case 0xE:
-                    index += regs[x];
-                    // if (index >= 0x1000)
-                    //     regs[0xF] = 1;
+                case 0x3:
+                    int hundreds, tens, ones;
+                    hundreds = regs[x] / 100;
+                    tens = (regs[x] / 10) % 10;
+                    ones = regs[x] % 10;
+                    memory[index] = hundreds;
+                    memory[index+1] = tens;
+                    memory[index+2] = ones;
+                    break;
+                case 0x5:
+                    switch (instruction.nibbles.third)
+                    {
+                    case 0x1:
+                        delay = regs[x];
+                        break;
+                    case 0x5:
+                        for (int i = 0; i <= x; ++i)
+                            memory[index+i] = regs[i];
+                        break;
+                    case 0x6:
+                        for (int i = 0; i <= x; ++i)
+                            regs[i] = memory[index+i];
+                        break;
+                    default:
+                        break;
+                    }
+                    break;
+                case 0x7:
+                    regs[x] = delay;
+                    break;
+                case 0x8:
+                    sound = regs[x];
+                    break;
+                case 0x9:
+                    index = 0x50+(regs[x]*5);
                     break;
                 case 0xA:
                     int pressed = 0;
@@ -405,17 +463,8 @@ int main(int argc, char const *argv[])
                     if (pressed == 0)
                         pc -= 2;
                     break;
-                case 0x9:
-                    index = &memory[0x50+(regs[x]*5)];
-                    break;
-                case 0x3:
-                    int hundreds, tens, ones;
-                    hundreds = regs[x] / 100;
-                    tens = (regs[x] / 10) % 10;
-                    ones = regs[x] % 10;
-                    *index = hundreds;
-                    *(index+1) = tens;
-                    *(index+2) = ones;
+                case 0xE:
+                    index += regs[x];
                     break;
                 default:
                     break;
@@ -428,9 +477,18 @@ int main(int argc, char const *argv[])
             SDL_FillRect(gScreenSurface, NULL, SDL_MapRGBA(gScreenSurface->format, 0x00, 0x00, 0x00, 0x00));
             updateScreen(screen);
             SDL_UpdateWindowSurface(gWindow);
+
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            elapsed += end.tv_nsec - start.tv_nsec;
+            if (elapsed >= (1000000000 / 60))
+            {
+                elapsed = 0;
+                if (delay > 0) delay -= 1;
+                if (sound > 0) sound -= 1;
+            }
         }
     }
-
+    
     return 0;
 }
 
