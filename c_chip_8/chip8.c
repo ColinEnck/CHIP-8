@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "stack.h"
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 640
 
@@ -112,16 +111,10 @@ int main(int argc, char const *argv[])
     unsigned int index = 0;
 
     // stack array; 64 entries for good measure
-    // each entry is the number of a memory location
-    Stack stack;
-    stack.array = (unsigned short *)malloc(sizeof(short) * 64);
-    if (stack.array == NULL)
-    {
-        printf("'stack.array' failed allocation\n");
-        return 1;
-    }
-    bzero(stack.array, 64);
-    stack.size = 0;
+    unsigned int stack[64];
+    bzero(stack, sizeof(int)*64);
+    // unsigned char** sp = stack[0];
+    unsigned int sp = 0;
 
     // delay timer
     unsigned char delay = 0;
@@ -172,6 +165,9 @@ int main(int argc, char const *argv[])
     // timer stuff
     struct timespec start, end;
     unsigned long long elapsed = 0;
+
+    // misc.
+    int result, temp;
 
     if (!init())
         failed("initialize");
@@ -268,13 +264,18 @@ int main(int argc, char const *argv[])
                     for (int i = 0; i < 64 * 32; ++i)
                         screen[i] = 0;
                 else if (whole == 0x00EE)
-                    pc = &memory[pop(&stack)];
+                {
+                    pc = &memory[stack[sp]];
+                    stack[sp] = 0;
+                    sp--;
+                }
                 break;
             case 0x1:
                 pc = &memory[nnn];
                 break;
             case 0x2:
-                push(&stack, pc - memory);
+                sp++;
+                stack[sp] = pc - memory;
                 pc = &memory[nnn];
                 break;
             case 0x3:
@@ -309,51 +310,53 @@ int main(int argc, char const *argv[])
                         regs[x] ^= regs[y];
                         break;
                     case 0x4:
-                        int result = (int) regs[x] + (int) regs[y];
-                        if (result > 255) 
+                        result = (int) regs[x] + (int) regs[y];
+                        if (result > 255)
                         {
-                            regs[0xF] = 1;
                             regs[x] = (unsigned char) result;
+                            regs[0xF] = 1;
                         }
                         else 
                         {
-                            regs[0xF] = 0;
                             regs[x] = (unsigned char) result & 0xFF;
+                            regs[0xF] = 0;
                         }
                         break;
                     case 0x5:
                         result = (int) regs[x] - (int) regs[y];
                         if (result >= 0)
                         {
-                            regs[0xF] = 1;
                             regs[x] = result;
+                            regs[0xF] = 1;
                         }
                         else 
                         {
-                            regs[0xF] = 0;
                             regs[x] = (unsigned char) result;
+                            regs[0xF] = 0;
                         }
                         break;
                     case 0x6:
-                        regs[0xF] = regs[x] & 0x01;
+                        temp = regs[x] & 0x01;
                         regs[x] /= 2;
+                        regs[0xF] = temp;
                         break;
                     case 0x7:
                         result = (int) regs[y] - (int) regs[x];
                         if (result >= 0)
                         {
-                            regs[0xF] = 1;
                             regs[x] = result;
+                            regs[0xF] = 1;
                         }
                         else 
                         {
-                            regs[0xF] = 0;
                             regs[x] = (unsigned char) result;
+                            regs[0xF] = 0;
                         }
                         break;
                     case 0xE:
-                        regs[0xF] = regs[x] & 0x01;
+                        temp = regs[x] >> 7;
                         regs[x] *= 2;
+                        regs[0xF] = temp;
                         break;
                     default:
                         break;
@@ -381,21 +384,21 @@ int main(int argc, char const *argv[])
                 {
                     sprite.value = memory[index+i];
                     if (sprite.bits.first)
-                        pixelChange(screen, xcords, ycords + i, regs);
+                        pixelChange(screen, xcords, (ycords + i) % 32, regs);
                     if (sprite.bits.second)
-                        pixelChange(screen, xcords + 1, ycords + i, regs);
+                        pixelChange(screen, (xcords + 1) % 64, (ycords + i) % 32, regs);
                     if (sprite.bits.third)
-                        pixelChange(screen, xcords + 2, ycords + i, regs);
+                        pixelChange(screen, (xcords + 2) % 64, (ycords + i) % 32, regs);
                     if (sprite.bits.fourth)
-                        pixelChange(screen, xcords + 3, ycords + i, regs);
+                        pixelChange(screen, (xcords + 3) % 64, (ycords + i) % 32, regs);
                     if (sprite.bits.fifth)
-                        pixelChange(screen, xcords + 4, ycords + i, regs);
+                        pixelChange(screen, (xcords + 4) % 64, (ycords + i) % 32, regs);
                     if (sprite.bits.sixth)
-                        pixelChange(screen, xcords + 5, ycords + i, regs);
+                        pixelChange(screen, (xcords + 5) % 64, (ycords + i) % 32, regs);
                     if (sprite.bits.seventh)
-                        pixelChange(screen, xcords + 6, ycords + i, regs);
+                        pixelChange(screen, (xcords + 6) % 64, (ycords + i) % 32, regs);
                     if (sprite.bits.eigth)
-                        pixelChange(screen, xcords + 7, ycords + i, regs);
+                        pixelChange(screen, (xcords + 7) % 64, (ycords + i) % 32, regs);
                 }
                 break;
             case 0xE:
